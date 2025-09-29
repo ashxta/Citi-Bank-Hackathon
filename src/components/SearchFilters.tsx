@@ -4,12 +4,10 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, Filter, X, TrendingUp, Sparkles, Download } from 'lucide-react';
+import { Search, Filter, X, TrendingUp } from 'lucide-react';
 
 interface SearchFiltersProps {
   onSearch: (filters: SearchFilters) => void;
-  showAdvanced: boolean;
-  onShowAdvanced: () => void;
 }
 
 export interface SearchFilters {
@@ -40,7 +38,7 @@ const statusOptions = [
   { value: 'hired', label: 'Hired' }
 ];
 
-export function SearchFilters({ onSearch, showAdvanced, onShowAdvanced }: SearchFiltersProps) {
+export function SearchFilters({ onSearch }: SearchFiltersProps) {
   const [filters, setFilters] = useState<SearchFilters>({
     query: '',
     university: '',
@@ -50,12 +48,71 @@ export function SearchFilters({ onSearch, showAdvanced, onShowAdvanced }: Search
     graduationYear: ''
   });
 
-  const [smartSearchQuery, setSmartSearchQuery] = useState('');
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [smartQuery, setSmartQuery] = useState('');
 
   const handleFilterChange = (key: keyof SearchFilters, value: any) => {
     const newFilters = { ...filters, [key]: value };
     setFilters(newFilters);
     onSearch(newFilters);
+  };
+
+  // Naive smart query parser to map natural language to filters
+  const parseSmartQuery = (query: string): Partial<SearchFilters> => {
+    const q = query.toLowerCase();
+    const result: Partial<SearchFilters> = {};
+
+    // CGPA parsing (support more phrasings like: "with above 9 cgpa", ">= 8", "minimum 7.5 gpa")
+    const cgpaPatterns = [
+      /\b(?:cgpa|gpa)\b\s*(?:>=|>|above|over|at least|minimum|min)?\s*(\d+(?:\.\d+)?)/i,
+      /\b(?:with\s+)?(?:above|over|greater than|gt|>=|>)\s*(\d+(?:\.\d+)?)\s*\b(?:cgpa|gpa)\b/i,
+      /\b(?:at\s+least|minimum|min)\s*(\d+(?:\.\d+)?)\s*\b(?:cgpa|gpa)\b/i,
+      /\b(\d+(?:\.\d+)?)\s*\+\s*\b(?:cgpa|gpa)\b/i,
+      /\b(?:cgpa|gpa)\b\s*(?:>=|>|gt)\s*(\d+(?:\.\d+)?)/i,
+    ];
+    for (const re of cgpaPatterns) {
+      const m = q.match(re);
+      if (m) {
+        const v = parseFloat(m[1]);
+        if (!isNaN(v)) {
+          result.minCgpa = v;
+          break;
+        }
+      }
+    }
+
+    // Skills extraction (match against known popular skills)
+    const matchedSkills = popularSkills.filter((s) => q.includes(s.toLowerCase()));
+    if (matchedSkills.length) {
+      // merge with existing
+      const uniq = Array.from(new Set([...(filters.skills || []), ...matchedSkills]));
+      result.skills = uniq;
+    }
+
+    // University extraction
+    const uni = universities.find((u) => q.includes(u.toLowerCase()));
+    if (uni) result.university = uni;
+
+    // Status extraction
+    if (q.includes('available')) result.status = 'available';
+    else if (q.includes('interviewing')) result.status = 'interviewing';
+    else if (q.includes('hired')) result.status = 'hired';
+
+    // Graduation year
+    const yearMatch = query.match(/\b(20\d{2})\b/);
+    if (yearMatch) result.graduationYear = yearMatch[1];
+
+    // Fallback: put remaining text into simple query for name/keywords
+    result.query = query;
+    return result;
+  };
+
+  const handleSmartSearch = () => {
+    if (!smartQuery.trim()) return;
+    const parsed = parseSmartQuery(smartQuery.trim());
+    const updated = { ...filters, ...parsed } as SearchFilters;
+    setFilters(updated);
+    onSearch(updated);
   };
 
   const handleSkillToggle = (skill: string) => {
@@ -75,38 +132,7 @@ export function SearchFilters({ onSearch, showAdvanced, onShowAdvanced }: Search
       graduationYear: ''
     };
     setFilters(emptyFilters);
-    setSmartSearchQuery('');
     onSearch(emptyFilters);
-  };
-
-  const handleSmartSearch = () => {
-    const query = smartSearchQuery.toLowerCase();
-    const newFilters: SearchFilters = { ...filters };
-
-    // Basic CGPA parsing
-    const cgpaMatch = query.match(/(?:above|greater than|over|more than)\s*(\d\.?\d?)/);
-    if (cgpaMatch && cgpaMatch[1]) {
-      newFilters.minCgpa = parseFloat(cgpaMatch[1]);
-    }
-
-    // Basic skill parsing
-    const knowsMatch = query.match(/(?:knows|with skills in|skilled in|who know)\s*([a-zA-Z\s,]+)/);
-    if (knowsMatch && knowsMatch[1]) {
-      const skills = knowsMatch[1].split(/,| and /).map(s => s.trim());
-      newFilters.skills = [...new Set([...newFilters.skills, ...skills])];
-    } else {
-      // Fallback for simple skill mentions
-      popularSkills.forEach(skill => {
-        if (query.includes(skill.toLowerCase())) {
-          if (!newFilters.skills.includes(skill)) {
-            newFilters.skills = [...newFilters.skills, skill];
-          }
-        }
-      });
-    }
-
-    setFilters(newFilters);
-    onSearch(newFilters);
   };
 
   return (
@@ -129,13 +155,13 @@ export function SearchFilters({ onSearch, showAdvanced, onShowAdvanced }: Search
             <div className="flex flex-wrap gap-2 items-center">
               <span className="text-sm font-medium text-muted-foreground">Quick filters:</span>
               <Button
-                variant={showAdvanced ? "default" : "outline"}
+                variant="outline"
                 size="sm"
-                onClick={onShowAdvanced}
+                onClick={() => setShowAdvanced(!showAdvanced)}
                 className="gap-2 hover:bg-primary/10"
               >
                 <Filter className="w-4 h-4" />
-                {showAdvanced ? 'Hide Advanced' : 'Advanced'}
+                Advanced
               </Button>
               
               {/* Status Filter */}
@@ -153,7 +179,7 @@ export function SearchFilters({ onSearch, showAdvanced, onShowAdvanced }: Search
               </Select>
 
               {/* Clear Filters */}
-              {(filters.query || filters.university || filters.skills.length > 0 || filters.status !== 'all' || filters.minCgpa > 0 || filters.graduationYear) && (
+              {(filters.query || filters.university || filters.skills.length > 0 || filters.status !== 'all') && (
                 <Button
                   variant="ghost"
                   size="sm"
@@ -164,49 +190,39 @@ export function SearchFilters({ onSearch, showAdvanced, onShowAdvanced }: Search
                   Clear all
                 </Button>
               )}
-              
-              <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" disabled>
-                  <Download className="w-4 h-4 mr-2" />
-                  Export to Excel
-                </Button>
-                <Badge variant="outline">Coming Soon</Badge>
-              </div>
             </div>
 
             {/* Advanced Filters */}
             {showAdvanced && (
               <div className="space-y-4 p-4 bg-card-glass rounded-lg animate-fade-in">
                 {/* Smart Search */}
-                <div className="relative">
-                  <Sparkles className="absolute left-3 top-1/2 transform -translate-y-1/2 text-primary w-4 h-4" />
-                  <Input
-                    placeholder='Try: "Show me students with CGPA above 9 who know Python"'
-                    value={smartSearchQuery}
-                    onChange={(e) => setSmartSearchQuery(e.target.value)}
-                    className="pl-10 pr-32 bg-background/50 border-border/50 focus:border-primary transition-all"
-                    onKeyDown={(e) => e.key === 'Enter' && handleSmartSearch()}
-                  />
-                  <Button 
-                    onClick={handleSmartSearch} 
-                    size="sm" 
-                    className="absolute right-1 top-1/2 transform -translate-y-1/2"
-                    disabled={!smartSearchQuery.trim()}
-                  >
-                    Apply Smart Search
-                  </Button>
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Smart search</label>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                    <Input
+                      placeholder='Try: "Show me students with CGPA above 9 and who know Python"'
+                      value={smartQuery}
+                      onChange={(e) => setSmartQuery(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === 'Enter') handleSmartSearch(); }}
+                      className="pl-10 bg-background/50 border-border/50 focus:border-primary"
+                    />
+                  </div>
+                  <div className="mt-2">
+                    <Button size="sm" onClick={handleSmartSearch} className="gap-2">Apply smart search</Button>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {/* University Filter */}
                   <div>
                     <label className="text-sm font-medium mb-2 block">University</label>
-                    <Select value={filters.university} onValueChange={(value) => handleFilterChange('university', value)}>
+                    <Select value={filters.university || 'all'} onValueChange={(value) => handleFilterChange('university', value === 'all' ? '' : value)}>
                       <SelectTrigger>
-                        <SelectValue placeholder="All Universities" />
+                        <SelectValue placeholder="Select university" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">All Universities</SelectItem>
+                        <SelectItem value="all">All Universities</SelectItem>
                         {universities.map((uni) => (
                           <SelectItem key={uni} value={uni}>
                             {uni}
@@ -224,7 +240,7 @@ export function SearchFilters({ onSearch, showAdvanced, onShowAdvanced }: Search
                       onValueChange={(value) => handleFilterChange('minCgpa', parseFloat(value))}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Any CGPA" />
+                        <SelectValue placeholder="Select minimum CGPA" />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="0">Any CGPA</SelectItem>
@@ -240,12 +256,12 @@ export function SearchFilters({ onSearch, showAdvanced, onShowAdvanced }: Search
                   {/* Graduation Year */}
                   <div>
                     <label className="text-sm font-medium mb-2 block">Graduation Year</label>
-                    <Select value={filters.graduationYear} onValueChange={(value) => handleFilterChange('graduationYear', value)}>
+                    <Select value={filters.graduationYear || 'all'} onValueChange={(value) => handleFilterChange('graduationYear', value === 'all' ? '' : value)}>
                       <SelectTrigger>
-                        <SelectValue placeholder="Any Year" />
+                        <SelectValue placeholder="Select year" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">Any Year</SelectItem>
+                        <SelectItem value="all">Any Year</SelectItem>
                         <SelectItem value="2024">2024</SelectItem>
                         <SelectItem value="2025">2025</SelectItem>
                         <SelectItem value="2026">2026</SelectItem>
@@ -282,7 +298,7 @@ export function SearchFilters({ onSearch, showAdvanced, onShowAdvanced }: Search
             )}
 
             {/* Active Filters Display */}
-            {(filters.skills.length > 0 || filters.university || filters.minCgpa > 0 || filters.graduationYear) && (
+            {(filters.skills.length > 0 || filters.university || filters.minCgpa > 0) && (
               <div className="flex flex-wrap gap-2 pt-2 border-t border-border/50">
                 <span className="text-sm text-muted-foreground">Applied filters:</span>
                 {filters.university && (
@@ -300,15 +316,6 @@ export function SearchFilters({ onSearch, showAdvanced, onShowAdvanced }: Search
                     <X
                       className="w-3 h-3 cursor-pointer"
                       onClick={() => handleFilterChange('minCgpa', 0)}
-                    />
-                  </Badge>
-                )}
-                {filters.graduationYear && (
-                  <Badge variant="secondary" className="gap-1">
-                    Class of {filters.graduationYear}
-                    <X
-                      className="w-3 h-3 cursor-pointer"
-                      onClick={() => handleFilterChange('graduationYear', '')}
                     />
                   </Badge>
                 )}
