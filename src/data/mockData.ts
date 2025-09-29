@@ -67,7 +67,8 @@ export const mockStudents: Student[] = [
     isFavorite: true,
     isShortlisted: false,
     notes: 'Strong candidate for frontend roles.',
-    linkedin: 'https://www.linkedin.com/in/vinayak-chandra-suryavanshi-0247b01b1/'
+    linkedin: 'https://www.linkedin.com/in/vinayak-chandra-suryavanshi-0247b01b1/',
+    github: 'https://github.com/vinayakchandra'
   },
   {
     id: 'std-2',
@@ -87,7 +88,8 @@ export const mockStudents: Student[] = [
     isFavorite: false,
     isShortlisted: true,
     notes: '',
-    linkedin: 'linkedin.com/in/anushree-dixit'
+    linkedin: 'linkedin.com/in/anushree-dixit',
+    github: ''
   },
   {
     id: 'std-3',
@@ -107,7 +109,8 @@ export const mockStudents: Student[] = [
     isFavorite: false,
     isShortlisted: false,
     notes: '',
-    linkedin: 'https://www.linkedin.com/in/rushil-mitra-986614327/'
+    linkedin: 'https://www.linkedin.com/in/rushil-mitra-986614327/',
+    github: ''
   },
   {
     id: 'std-4',
@@ -127,7 +130,8 @@ export const mockStudents: Student[] = [
     isFavorite: false,
     isShortlisted: false,
     notes: 'Hired by a top tech company.',
-    linkedin: 'https://www.linkedin.com/in/ashita-a-602001282/'
+    linkedin: 'https://www.linkedin.com/in/ashita-a-602001282/',
+    github: 'https://github.com/ashita03'
   }
 ];
 
