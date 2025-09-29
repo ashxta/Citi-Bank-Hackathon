@@ -32,6 +32,11 @@ const Index = () => {
     status: 'all',
     graduationYear: ''
   });
+  const [showAdvanced, setShowAdvanced] = useState(false); // New state variable
+
+  const toggleAdvanced = () => {
+    setShowAdvanced(!showAdvanced);
+  }; // New toggle function
 
   // Filter students based on search criteria
   const filteredStudents = useMemo(() => {
@@ -289,7 +294,7 @@ const Index = () => {
           </div>
 
           {/* Search and Filter */}
-          <SearchFilters onSearch={setSearchFilters} />
+          <SearchFilters onSearch={setSearchFilters} showAdvanced={showAdvanced} onShowAdvanced={toggleAdvanced} />
 
           {/* Results Header */}
           <div id="student-profiles" className="flex items-center justify-between">
