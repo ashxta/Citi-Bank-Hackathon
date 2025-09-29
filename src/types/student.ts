@@ -16,8 +16,7 @@ export interface Student {
   isFavorite?: boolean;
   isShortlisted?: boolean;
   notes?: string;
-  linkedinUrl?: string;
-  githubUrl?: string;
+  linkedin?: string;
 }
 
 export interface Project {
