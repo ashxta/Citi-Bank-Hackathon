@@ -66,7 +66,8 @@ export const mockStudents: Student[] = [
     phone: '+91 98765 43210',
     isFavorite: true,
     isShortlisted: false,
-    notes: 'Strong candidate for frontend roles.'
+    notes: 'Strong candidate for frontend roles.',
+    linkedin: 'https://www.linkedin.com/in/vinayak-chandra-suryavanshi-0247b01b1/'
   },
   {
     id: 'std-2',
@@ -85,7 +86,8 @@ export const mockStudents: Student[] = [
     phone: '+91 87654 32109',
     isFavorite: false,
     isShortlisted: true,
-    notes: ''
+    notes: '',
+    linkedin: 'linkedin.com/in/anushree-dixit'
   },
   {
     id: 'std-3',
@@ -104,7 +106,8 @@ export const mockStudents: Student[] = [
     phone: '+91 76543 21098',
     isFavorite: false,
     isShortlisted: false,
-    notes: ''
+    notes: '',
+    linkedin: 'https://www.linkedin.com/in/rushil-mitra-986614327/'
   },
   {
     id: 'std-4',
@@ -123,7 +126,8 @@ export const mockStudents: Student[] = [
     phone: '+91 65432 10987',
     isFavorite: false,
     isShortlisted: false,
-    notes: 'Hired by a top tech company.'
+    notes: 'Hired by a top tech company.',
+    linkedin: 'https://www.linkedin.com/in/ashita-a-602001282/'
   }
 ];
 
