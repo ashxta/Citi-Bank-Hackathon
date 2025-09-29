@@ -8,6 +8,8 @@ import { Search, Filter, X, TrendingUp, Sparkles, Download } from 'lucide-react'
 
 interface SearchFiltersProps {
   onSearch: (filters: SearchFilters) => void;
+  showAdvanced: boolean; // Add this prop
+  onShowAdvanced: () => void; // Add this prop
 }
 
 export interface SearchFilters {
@@ -38,7 +40,7 @@ const statusOptions = [
   { value: 'hired', label: 'Hired' }
 ];
 
-export function SearchFilters({ onSearch }: SearchFiltersProps) {
+export function SearchFilters({ onSearch, showAdvanced, onShowAdvanced }: SearchFiltersProps) {
   const [filters, setFilters] = useState<SearchFilters>({
     query: '',
     university: '',
@@ -48,7 +50,6 @@ export function SearchFilters({ onSearch }: SearchFiltersProps) {
     graduationYear: ''
   });
 
-  const [showAdvanced, setShowAdvanced] = useState(false);
   const [smartSearchQuery, setSmartSearchQuery] = useState('');
 
   const handleFilterChange = (key: keyof SearchFilters, value: any) => {
@@ -129,7 +130,7 @@ export function SearchFilters({ onSearch }: SearchFiltersProps) {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setShowAdvanced(!showAdvanced)}
+                onClick={onShowAdvanced}
                 className="gap-2 hover:bg-primary/10"
               >
                 <Filter className="w-4 h-4" />
