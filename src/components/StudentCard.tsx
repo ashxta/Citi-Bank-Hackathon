@@ -3,9 +3,8 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { MapPin, GraduationCap, Star, Heart, Bookmark, MessageSquare, Link as LinkIcon, Github } from 'lucide-react';
+import { MapPin, GraduationCap, Star, Linkedin, Heart, Bookmark, MessageSquare } from 'lucide-react';
 import { useState } from 'react';
-import { Input } from '@/components/ui/input';
 
 interface StudentCardProps {
   student: Student;
@@ -13,17 +12,10 @@ interface StudentCardProps {
   onFavoriteToggle: (studentId: string) => void;
   onShortlistToggle: (studentId: string) => void;
   onSetNotes: (studentId: string, notes: string) => void;
-  // selection support
-  isSelected?: boolean;
-  onSelectToggle?: (studentId: string) => void;
-  // social links update
-  onUpdateSocials?: (studentId: string, socials: { linkedinUrl?: string; githubUrl?: string }) => void;
 }
 
-export function StudentCard({ student, onViewProfile, onFavoriteToggle, onShortlistToggle, onSetNotes, isSelected, onSelectToggle, onUpdateSocials }: StudentCardProps) {
+export function StudentCard({ student, onViewProfile, onFavoriteToggle, onShortlistToggle, onSetNotes }: StudentCardProps) {
   const [notes, setNotes] = useState(student.notes || '');
-  const [linkedinUrl, setLinkedinUrl] = useState<string>(student.linkedinUrl || '');
-  const [githubUrl, setGithubUrl] = useState<string>(student.githubUrl || '');
 
   const getStatusColor = (status: Student['status']) => {
     switch (status) {
@@ -43,9 +35,6 @@ export function StudentCard({ student, onViewProfile, onFavoriteToggle, onShortl
     onSetNotes(student.id, e.target.value);
   };
 
-  const commitSocials = () => {
-    onUpdateSocials?.(student.id, { linkedinUrl: linkedinUrl || undefined, githubUrl: githubUrl || undefined });
-  };
 
   return (
     <Card className="group glass-card hover-lift hover-glow border-border/50 overflow-hidden animate-slide-up">
@@ -63,16 +52,7 @@ export function StudentCard({ student, onViewProfile, onFavoriteToggle, onShortl
                   <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-primary rounded-full animate-pulse-glow" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold gradient-text flex items-center gap-2">
-                    {/* selection checkbox */}
-                    <input
-                      type="checkbox"
-                      className="w-4 h-4 accent-primary"
-                      checked={!!isSelected}
-                      onChange={() => onSelectToggle?.(student.id)}
-                    />
-                    {student.name}
-                  </h3>
+                  <h3 className="text-xl font-bold gradient-text">{student.name}</h3>
                   <p className="text-muted-foreground flex items-center gap-1">
                     <GraduationCap className="w-4 h-4" />
                     {student.degree}
@@ -121,30 +101,6 @@ export function StudentCard({ student, onViewProfile, onFavoriteToggle, onShortl
               </div>
             </div>
 
-            {/* Social Links */}
-            <div className="space-y-2">
-              <h4 className="text-sm font-semibold mb-1 flex items-center gap-2"><LinkIcon className="w-4 h-4" /> Social Profiles</h4>
-              <div className="flex flex-col gap-2">
-                <Input
-                  placeholder="LinkedIn profile URL"
-                  value={linkedinUrl}
-                  onChange={(e) => setLinkedinUrl(e.target.value)}
-                  onBlur={commitSocials}
-                  className="bg-background/50 border-border/50 focus:border-primary text-xs"
-                />
-                <div className="flex items-center gap-2">
-                  <Input
-                    placeholder="GitHub profile URL"
-                    value={githubUrl}
-                    onChange={(e) => setGithubUrl(e.target.value)}
-                    onBlur={commitSocials}
-                    className="bg-background/50 border-border/50 focus:border-primary text-xs"
-                  />
-                  <span className="text-[10px] text-muted-foreground flex items-center gap-1"><Github className="w-3 h-3" /> OAuth: coming soon</span>
-                </div>
-              </div>
-            </div>
-
             {/* Recruiter Notes */}
             <div>
               <h4 className="text-sm font-semibold mb-2 flex items-center gap-2"><MessageSquare className="w-4 h-4" /> Recruiter Notes</h4>
@@ -156,7 +112,7 @@ export function StudentCard({ student, onViewProfile, onFavoriteToggle, onShortl
               />
             </div>
 
-            {/* Actions */}
+            {/* Contact Actions */}
             <div className="flex gap-2 pt-2">
               <Button
                 variant="default"
@@ -166,6 +122,13 @@ export function StudentCard({ student, onViewProfile, onFavoriteToggle, onShortl
               >
                 View Profile
               </Button>
+              {student.linkedin && (
+                <a href={student.linkedin.startsWith('http') ? student.linkedin : `https://${student.linkedin}`} target="_blank" rel="noopener noreferrer">
+                    <Button variant="outline" size="sm" className="hover-lift">
+                        <Linkedin className="w-4 h-4" />
+                    </Button>
+                </a>
+              )}
               <Button variant="outline" size="sm" className="hover-lift" onClick={() => onFavoriteToggle(student.id)}>
                 <Heart className={`w-4 h-4 ${student.isFavorite ? 'text-red-500 fill-current' : ''}`} />
               </Button>
