@@ -9,6 +9,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { mockStudents as initialMockStudents } from '@/data/mockData';
 import { Student } from '@/types/student';
 import { CollegeIntegration } from '@/components/CollegeIntegration';
+import { toast } from '@/components/ui/sonner';
 import {
   Users,
   TrendingUp,
@@ -32,11 +33,9 @@ const Index = () => {
     status: 'all',
     graduationYear: ''
   });
-  const [showAdvanced, setShowAdvanced] = useState(false); // New state variable
-
-  const toggleAdvanced = () => {
-    setShowAdvanced(!showAdvanced);
-  }; // New toggle function
+  // selection + sending state
+  const [selectedCandidates, setSelectedCandidates] = useState<Set<string>>(new Set());
+  const [isSending, setIsSending] = useState(false);
 
   // Filter students based on search criteria
   const filteredStudents = useMemo(() => {
@@ -137,6 +136,75 @@ const Index = () => {
     );
   };
 
+  // update socials (linkedin/github)
+  const handleUpdateSocials = (studentId: string, socials: { linkedinUrl?: string; githubUrl?: string }) => {
+    setMockStudents(prev => prev.map(s => s.id === studentId ? { ...s, ...socials } : s));
+  };
+
+  // selection handlers
+  const handleSelectCandidate = (studentId: string) => {
+    setSelectedCandidates(prev => {
+      const next = new Set(prev);
+      if (next.has(studentId)) next.delete(studentId); else next.add(studentId);
+      return next;
+    });
+  };
+  const selectAllFiltered = () => setSelectedCandidates(new Set(filteredStudents.map(s => s.id)));
+  const clearSelection = () => setSelectedCandidates(new Set());
+
+  // SendGrid sender (uses VITE_ env vars)
+  const sendEmailsToCandidates = async () => {
+    const apiKey = import.meta.env.VITE_SENDGRID_API_KEY as string | undefined;
+    const fromEmail = import.meta.env.VITE_SENDGRID_FROM as string | undefined;
+    if (!apiKey || !fromEmail) {
+      toast.error('Missing SendGrid configuration');
+      return;
+    }
+    const targets = (selectedCandidates.size > 0
+      ? filteredStudents.filter(s => selectedCandidates.has(s.id))
+      : filteredStudents);
+    if (targets.length === 0) {
+      toast.message('No candidates to contact');
+      return;
+    }
+
+    const payload = {
+      personalizations: [
+        { to: targets.map(s => ({ email: s.email, name: s.name })) }
+      ],
+      from: { email: fromEmail },
+      subject: 'Opportunity from Campus Recruitment',
+      content: [
+        { type: 'text/plain', value: 'Hello,\n\nWe found your profile a great match for current opportunities. Reply to this email if you are interested.\n\nBest regards,\nRecruitment Team' }
+      ]
+    };
+
+    try {
+      setIsSending(true);
+      const res = await fetch('https://api.sendgrid.com/v3/mail/send', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`
+        },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) {
+        const text = await res.text();
+        console.error('SendGrid error', res.status, text);
+        toast.error('Failed to send some emails');
+      } else {
+        toast.success(`Emails sent to ${targets.length} candidate(s)`);
+        clearSelection();
+      }
+    } catch (e) {
+      console.error(e);
+      toast.error('Failed to send emails');
+    } finally {
+      setIsSending(false);
+    }
+  };
+
   const handleExploreClick = () => {
     const studentProfilesSection = document.getElementById('student-profiles');
     if (studentProfilesSection) {
@@ -144,12 +212,11 @@ const Index = () => {
     }
   };
 
-
   return (
     <div className="min-h-screen bg-background relative">
-      <div id="stars" className="stars"></div>
-      <div id="stars2" className="stars"></div>
-      <div id="stars3" className="stars"></div>
+      <div id="stars" className="stars pointer-events-none"></div>
+      <div id="stars2" className="stars pointer-events-none"></div>
+      <div id="stars3" className="stars pointer-events-none"></div>
       <Navigation />
       
       {/* Hero Section */}
@@ -294,7 +361,7 @@ const Index = () => {
           </div>
 
           {/* Search and Filter */}
-          <SearchFilters onSearch={setSearchFilters} showAdvanced={showAdvanced} onShowAdvanced={toggleAdvanced} />
+          <SearchFilters onSearch={setSearchFilters} />
 
           {/* Results Header */}
           <div id="student-profiles" className="flex items-center justify-between">
@@ -305,6 +372,23 @@ const Index = () => {
               <p className="text-muted-foreground">
                 Showing {filteredStudents.length} of {mockStudents.length} students
               </p>
+            </div>
+            {/* Toolbar: selection + contact */}
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={selectAllFiltered} type="button">
+                Select All ({filteredStudents.length})
+              </Button>
+              <Button variant="ghost" size="sm" onClick={clearSelection} disabled={selectedCandidates.size === 0} type="button">
+                Clear Selection
+              </Button>
+              {selectedCandidates.size > 0 && (
+                <Button variant="outline" size="sm" disabled title="Export details of all students as Excel" type="button">
+                  Export all students (coming soon)
+                </Button>
+              )}
+              <Button size="sm" className="bg-gradient-primary" onClick={sendEmailsToCandidates} disabled={isSending || filteredStudents.length === 0} type="button">
+                {isSending ? 'Sending…' : 'Contact Selected'}
+              </Button>
             </div>
           </div>
 
@@ -318,6 +402,10 @@ const Index = () => {
                   onFavoriteToggle={handleFavoriteToggle}
                   onShortlistToggle={handleShortlistToggle}
                   onSetNotes={handleSetNotes}
+                  // selection + socials wiring
+                  isSelected={selectedCandidates.has(student.id)}
+                  onSelectToggle={handleSelectCandidate}
+                  onUpdateSocials={handleUpdateSocials}
                 />
               </div>
             ))}
