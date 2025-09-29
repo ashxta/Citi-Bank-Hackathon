@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { MapPin, GraduationCap, Star, Linkedin, Heart, Bookmark, MessageSquare } from 'lucide-react';
+import { MapPin, GraduationCap, Star, Linkedin, Github, Heart, Bookmark, MessageSquare } from 'lucide-react';
 import { useState } from 'react';
 
 interface StudentCardProps {
@@ -126,6 +126,13 @@ export function StudentCard({ student, onViewProfile, onFavoriteToggle, onShortl
                 <a href={student.linkedin.startsWith('http') ? student.linkedin : `https://${student.linkedin}`} target="_blank" rel="noopener noreferrer">
                     <Button variant="outline" size="sm" className="hover-lift">
                         <Linkedin className="w-4 h-4" />
+                    </Button>
+                </a>
+              )}
+               {student.github && (
+                <a href={student.github.startsWith('http') ? student.github : `https://${student.github}`} target="_blank" rel="noopener noreferrer">
+                    <Button variant="outline" size="sm" className="hover-lift">
+                        <Github className="w-4 h-4" />
                     </Button>
                 </a>
               )}
